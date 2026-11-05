@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>팩트렌즈</title>
+<style>
+  :root{
+    --bg:#15171b; --side:#1a1c20; --surface:#1b1e23; --surface-hover:#21242a;
+    --text:#dbdee3; --strong:#ffffff; --muted:rgba(219,222,227,.65); --faint:rgba(219,222,227,.5);
+    --line:rgba(219,222,227,.14); --line-soft:rgba(219,222,227,.07); --hover:rgba(219,222,227,.06);
+    --accent:#8fa3ff; --on-accent:#0f1220;
+    --v-true:#3fb97c; --v-mostly-true:#8bc34a; --v-half:#e0a526; --v-mostly-false:#ef7d45; --v-false:#ec5f5f; --v-hold:#8b93a1;
+    --font:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,-apple-system,sans-serif;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#fbfbf9; --side:#f3f3f0; --surface:#ffffff; --surface-hover:#f1f1ee;
+      --text:#2b2f36; --strong:#14161a; --muted:rgba(43,47,54,.68); --faint:rgba(43,47,54,.5);
+      --line:rgba(43,47,54,.16); --line-soft:rgba(43,47,54,.08); --hover:rgba(43,47,54,.06);
+      --accent:#4a5ee0; --on-accent:#ffffff;
+      --v-true:#1a7f4b; --v-mostly-true:#4c8a1f; --v-half:#a86f00; --v-mostly-false:#c2501b; --v-false:#c62828; --v-hold:#6b7280;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font:400 14px/1.6 var(--font);-webkit-font-smoothing:antialiased}
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+  button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  [hidden]{display:none!important}
+
+  .app{display:flex;height:100vh}
+
+  /* 사이드바 */
+  .sidebar{width:240px;flex:none;background:var(--side);display:flex;flex-direction:column;padding:12px 8px;overflow-y:auto;transition:transform .2s}
+  .brand{display:flex;align-items:center;gap:8px;padding:4px 8px 14px;color:var(--strong);font-size:17px;font-weight:600;letter-spacing:-.01em}
+  .brand svg{width:26px;height:26px;color:var(--accent)}
+  .new{display:flex;align-items:center;gap:8px;width:100%;height:40px;padding:0 10px;border-radius:8px;color:var(--strong);font-size:14px;font-weight:500;margin-bottom:12px}
+  .new:hover{background:var(--hover)}
+  .menu{display:flex;flex-direction:column;gap:2px}
+  .menu-item{display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:8px;color:var(--muted);text-align:left;width:100%}
+  .menu-item svg{width:16px;height:16px;flex:none}
+  .menu-item:hover:not(:disabled){background:var(--hover);color:var(--text)}
+  .menu-item.active{background:var(--hover);color:var(--strong)}
+  .menu-item:disabled{cursor:not-allowed;opacity:.55}
+  .menu-item .soon{margin-left:auto;font-size:11px;border:1px solid var(--line);border-radius:999px;padding:0 7px;line-height:18px}
+  .sec{margin:18px 10px 6px;font-size:12px;color:var(--faint);font-weight:500}
+  .recent{display:flex;flex-direction:column;gap:1px;min-height:40px}
+  .recent .empty{padding:0 10px;color:var(--faint);font-size:13px}
+  .recent button{display:block;width:100%;height:32px;padding:0 10px;border-radius:8px;text-align:left;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+  .recent button:hover{background:var(--hover);color:var(--text)}
+  .side-foot{margin-top:auto;padding-top:12px}
+  .foot-btn{display:flex;align-items:center;gap:10px;width:100%;height:40px;padding:0 10px;border-radius:8px;color:var(--muted)}
+  .foot-btn:hover{background:var(--hover);color:var(--text)}
+  .foot-btn svg{width:16px;height:16px}
+
+  /* 본문 */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow-y:auto}
+  .top{height:56px;flex:none;display:none;align-items:center;padding:0 12px;border-bottom:1px solid var(--line-soft)}
+  .icon-btn{width:32px;height:32px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted)}
+  .icon-btn:hover{background:var(--hover);color:var(--text)}
+  .icon-btn svg{width:18px;height:18px}
+
+  .home{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px 68px}
+  .home .mark{width:34px;height:34px;color:var(--accent);margin-bottom:0}
+  .home h1{margin:0 0 37px;font-size:26px;line-height:39px;font-weight:300;color:var(--text);text-align:center;letter-spacing:-.01em}
+
+  .composer{width:100%;max-width:640px;min-height:120px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:14px 14px 10px 18px;display:flex;flex-direction:column;transition:border-color .15s}
+  .composer:focus-within{border-color:rgba(143,163,255,.55)}
+  .composer textarea{flex:1;width:100%;min-height:52px;max-height:200px;resize:none;border:0;background:transparent;color:var(--text);font:inherit;font-size:16px;line-height:24px;outline:none;padding:0}
+  .composer textarea::placeholder{color:var(--faint)}
+  .composer-row{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+  .composer-hint{font-size:12px;color:var(--faint)}
+  .send{width:32px;height:32px;border-radius:999px;background:var(--accent);color:var(--on-accent);display:inline-flex;align-items:center;justify-content:center;transition:opacity .15s,transform .15s}
+  .send:hover:not(:disabled){transform:translateY(-1px)}
+  .send:disabled{opacity:.4;cursor:not-allowed}
+  .send svg{width:16px;height:16px}
+
+  .examples{width:100%;max-width:640px;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:38px}
+  .example{text-align:left;background:var(--surface);border:1px solid var(--line-soft);border-radius:12px;padding:14px 16px;min-height:86px;color:var(--muted);line-height:1.5;transition:background .15s,border-color .15s}
+  .example b{display:block;color:var(--text);font-weight:500;font-size:13px;margin-bottom:2px}
+  .example:hover{background:var(--surface-hover);border-color:var(--line)}
+
+  /* 결과 영역 */
+  .thread{width:100%;max-width:760px;margin:0 auto;padding:28px 16px 80px}
+  .q-title{margin:0 0 6px;font-size:26px;line-height:1.35;font-weight:400;color:var(--strong);letter-spacing:-.01em;word-break:keep-all}
+  .status{color:var(--muted);font-size:13px;min-height:20px;margin:6px 0 4px}
+  .status.busy::before{content:"";display:inline-block;width:12px;height:12px;margin-right:8px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;vertical-align:-2px;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .error{margin:12px 0;padding:12px 14px;border:1px solid rgba(236,95,95,.4);background:rgba(236,95,95,.08);border-radius:12px;color:var(--v-false);white-space:pre-wrap}
+
+  .cands{margin:14px 0;padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px}
+  .cands p{margin:0 0 10px;color:var(--text)}
+  .cands button{display:block;width:100%;text-align:left;margin-bottom:8px;padding:11px 14px;border:1px solid var(--line);border-radius:12px;line-height:1.5;color:var(--strong)}
+  .cands button:hover{background:var(--hover);border-color:rgba(143,163,255,.5)}
+  .cands button.plain{color:var(--muted);font-size:13px}
+
+  .verdict-line{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0 4px}
+  .badge{display:inline-flex;align-items:center;height:30px;padding:0 14px;border-radius:999px;font-weight:600;font-size:14px;border:1px solid currentColor}
+  .v-true{color:var(--v-true);background:rgba(63,185,124,.12)} .v-mostly-true{color:var(--v-mostly-true);background:rgba(139,195,74,.12)}
+  .v-half{color:var(--v-half);background:rgba(224,165,38,.12)} .v-mostly-false{color:var(--v-mostly-false);background:rgba(239,125,69,.12)}
+  .v-false{color:var(--v-false);background:rgba(236,95,95,.12)} .v-hold{color:var(--v-hold);background:rgba(139,147,161,.14)}
+  .summary{margin:0;font-size:16px;line-height:1.6;color:var(--strong)}
+
+  .block-title{display:flex;align-items:center;gap:8px;margin:28px 0 12px;font-size:16px;font-weight:600;color:var(--strong)}
+  .block-title svg{width:18px;height:18px;color:var(--muted)}
+  .sources{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+  .src{display:flex;flex-direction:column;gap:6px;min-height:92px;padding:12px;background:var(--surface);border:1px solid var(--line-soft);border-radius:12px;color:var(--text);text-decoration:none;transition:background .15s,border-color .15s}
+  a.src:hover{background:var(--surface-hover);border-color:var(--line)}
+  .src .tag{align-self:flex-start}
+  .src-title{font-size:13px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .src-meta{margin-top:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--faint);min-width:0}
+  .src-meta .n{flex:none;width:16px;height:16px;border-radius:50%;background:var(--hover);display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)}
+  .src-meta .host{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .src.cited{border-color:rgba(143,163,255,.45)}
+
+  .reason{margin:0;white-space:pre-wrap;line-height:1.75;color:var(--text);font-size:15px}
+  .ev{padding:14px 0;border-top:1px solid var(--line-soft)}
+  .ev:first-child{border-top:0;padding-top:0}
+  .ev .t{font-weight:500;color:var(--strong)}
+  .ev a{color:var(--accent);word-break:break-all;font-size:12px;text-decoration:none}
+  .ev a:hover{text-decoration:underline}
+  .ev p{margin:6px 0 0;font-size:13px;color:var(--muted);line-height:1.65}
+  .ev.cited .t::after{content:" · 판정에 인용됨";color:var(--accent);font-weight:400;font-size:12px}
+  .tag{display:inline-block;padding:0 8px;border-radius:6px;border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:500;line-height:18px;vertical-align:1px;white-space:nowrap}
+  .tag.weak{border-color:rgba(236,95,95,.5);color:var(--v-false)}
+  .note{color:var(--muted);font-size:13px}
+  .disclaimer{margin:28px 0 0;font-size:12px;color:var(--faint)}
+
+  /* 기록 화면 */
+  .hist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .hist-head h2{margin:0;font-size:22px;font-weight:400;color:var(--strong)}
+  .ghost{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:13px}
+  .ghost:hover{background:var(--hover);color:var(--text)}
+  .hist-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px 4px;border-top:1px solid var(--line-soft)}
+  .hist-item:hover{background:var(--hover)}
+  .hist-item .claim-t{flex:1;min-width:0;color:var(--strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hist-item .when{flex:none;font-size:12px;color:var(--faint)}
+  .mini-badge{flex:none;font-size:12px;font-weight:600;padding:0 10px;border-radius:999px;line-height:22px;border:1px solid currentColor}
+
+  /* 설정 창 */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+  .modal{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .modal h2{margin:0;font-size:18px;font-weight:600;color:var(--strong)}
+  .modal .lead{margin:0 0 12px;color:var(--muted);font-size:13px}
+  .modal label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px}
+  .modal input{width:100%;height:42px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--text);font:inherit}
+  .modal input:focus{border-color:rgba(143,163,255,.6);outline:none}
+  .modal-row{display:flex;gap:8px;align-items:center;margin-top:18px;flex-wrap:wrap}
+  .btn{height:38px;padding:0 16px;border-radius:999px;border:1px solid var(--line);color:var(--text)}
+  .btn:hover{background:var(--hover)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+  .btn.primary:hover{filter:brightness(1.08)}
+  #keyStatus{font-size:12px;color:var(--muted)}
+  .modal .fine{margin:14px 0 0;font-size:12px;color:var(--faint);line-height:1.6}
+
+  @media (max-width:820px){
+    .sidebar{position:fixed;inset:0 auto 0 0;z-index:40;transform:translateX(-100%);box-shadow:0 0 40px rgba(0,0,0,.5)}
+    .sidebar.open{transform:none}
+    .top{display:flex}
+    .examples{grid-template-columns:1fr}
+    .q-title{font-size:22px}
+    .home h1{font-size:22px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside id="sidebar" class="sidebar">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="14" cy="14" r="8.5"/><path d="M10.5 14.2l2.7 2.7 5-5.3"/><path d="M20.5 20.5L27 27"/></svg>
+      팩트렌즈
+    </div>
+    <button id="newCheck" class="new" type="button">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+      새 검증
+    </button>
+    <nav class="menu">
+      <button id="menuOne" class="menu-item active" type="button">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>한 문장 검증
+      </button>
+      <button class="menu-item" type="button" disabled title="준비 중입니다">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M5.5 6h5M5.5 8.5h5M5.5 11h3"/></svg>기사 점검<span class="soon">준비 중</span>
+      </button>
+      <button id="menuHistory" class="menu-item" type="button">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.3 1.5"/></svg>검증 기록
+      </button>
+    </nav>
+    <div class="sec">최근 검증</div>
+    <div id="recent" class="recent"></div>
+    <div class="side-foot">
+      <button id="openSettings" class="foot-btn" type="button">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M3.6 12.4l1.1-1.1M11.3 4.7l1.1-1.1"/></svg>설정
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="top">
+      <button id="menuBtn" class="icon-btn" type="button" aria-label="메뉴 열기">
+        <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 5h12M3 9h12M3 13h12"/></svg>
+      </button>
+    </div>
+
+    <section id="home" class="home">
+      <svg class="mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="14" cy="14" r="8.5"/><path d="M10.5 14.2l2.7 2.7 5-5.3"/><path d="M20.5 20.5L27 27"/></svg>
+      <h1>무엇을 확인할까요?</h1>
+      <div class="composer">
+        <textarea id="claim" rows="2" placeholder="검증할 주장을 입력하세요"></textarea>
+        <div class="composer-row">
+          <span class="composer-hint">Enter로 검증 · Shift+Enter로 줄바꿈</span>
+          <button id="run" class="send" type="button" aria-label="팩트체크">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M3.5 7.5L8 3l4.5 4.5"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="examples">
+        <button class="example" type="button" data-claim="지난해 우리 시 출생아 수가 전년보다 늘었다"><b>기준이 빠진 주장</b>지난해 우리 시 출생아 수가 전년보다 늘었다</button>
+        <button class="example" type="button" data-claim="2025년 최저임금은 시간당 10,030원이다"><b>수치가 분명한 주장</b>2025년 최저임금은 시간당 10,030원이다</button>
+      </div>
+    </section>
+
+    <section id="thread" class="thread" hidden>
+      <h2 id="qTitle" class="q-title"></h2>
+      <div id="runStatus" class="status"></div>
+      <div id="error" class="error" hidden></div>
+      <div id="cands" class="cands" hidden></div>
+      <div id="result" hidden>
+        <div class="verdict-line">
+          <span id="badge" class="badge"></span>
+          <p id="summary" class="summary"></p>
+        </div>
+        <div class="block-title">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1"/></svg>출처
+        </div>
+        <div id="sources" class="sources"></div>
+        <div class="block-title">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3.5h10M3 7h10M3 10.5h6"/></svg>판정 이유
+        </div>
+        <p id="reason" class="reason"></p>
+        <div class="block-title">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M5.5 6h5M5.5 9h5"/></svg>근거
+        </div>
+        <div id="evidence"></div>
+        <p class="disclaimer">출처 종류는 도메인으로 자동 추정한 값이라 틀릴 수 있습니다. AI 판정은 참고용이며, 보도 전 원문 출처를 반드시 직접 확인하세요.</p>
+      </div>
+    </section>
+
+    <section id="historyView" class="thread" hidden>
+      <div class="hist-head">
+        <h2>검증 기록</h2>
+        <button id="clearHistory" class="ghost" type="button">기록 모두 지우기</button>
+      </div>
+      <div id="historyList"></div>
+    </section>
+  </main>
+</div>
+
+<div id="settings" class="overlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-head">
+      <h2 id="settingsTitle">설정</h2>
+      <button id="closeSettings" class="icon-btn" type="button" aria-label="닫기">
+        <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4.5 4.5l9 9M13.5 4.5l-9 9"/></svg>
+      </button>
+    </div>
+    <p class="lead">검색과 판정에 쓰는 API 키를 입력하세요.</p>
+    <label for="tavilyKey">Tavily API 키</label>
+    <input id="tavilyKey" type="password" autocomplete="off" placeholder="tvly-...">
+    <label for="geminiKey">Gemini API 키</label>
+    <input id="geminiKey" type="password" autocomplete="off" placeholder="AIza...">
+    <div class="modal-row">
+      <button id="saveKeys" class="btn primary" type="button">저장</button>
+      <button id="clearKeys" class="btn" type="button">키 삭제</button>
+      <span id="keyStatus"></span>
+    </div>
+    <p class="fine">키는 파일에 적히지 않고, 이 브라우저(localStorage)에만 저장됩니다. 공용 PC에서는 사용 후 반드시 "키 삭제"를 누르세요.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var GEMINI_MODEL = "gemini-3.8-flash";
+  var VERDICTS = ["사실","대체로 사실","절반의 사실","대체로 사실 아님","사실 아님","판단 유보"];
+  var CLASSES = {"사실":"v-true","대체로 사실":"v-mostly-true","절반의 사실":"v-half","대체로 사실 아님":"v-mostly-false","사실 아님":"v-false","판단 유보":"v-hold"};
+  var K_TAVILY = "factcheck.tavilyKey", K_GEMINI = "factcheck.geminiKey";
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  // 브라우저가 localStorage를 막아도 이 탭이 열려 있는 동안은 메모리에 보관해 계속 쓸 수 있게 한다.
+  var mem = {};
+  function store(key, val){
+    if(val==null) delete mem[key]; else mem[key] = val;
+    try{ if(val==null) localStorage.removeItem(key); else localStorage.setItem(key, val); return true; }catch(e){ return false; }
+  }
+  function load(key){
+    try{ var v = localStorage.getItem(key); if(v) return v; }catch(e){}
+    return mem[key] || "";
+  }
+
+  function loadKeys(){
+    $("tavilyKey").value = load(K_TAVILY);
+    $("geminiKey").value = load(K_GEMINI);
+    if($("tavilyKey").value && $("geminiKey").value) $("keyStatus").textContent = "저장된 키를 불러왔습니다.";
+  }
+  $("saveKeys").onclick = function(){
+    var ok = store(K_TAVILY, $("tavilyKey").value.trim()) && store(K_GEMINI, $("geminiKey").value.trim());
+    $("keyStatus").textContent = ok ? "이 브라우저에 저장했습니다." : "브라우저가 저장을 막고 있어 이 탭을 닫으면 키가 사라집니다. 지금은 계속 사용할 수 있습니다.";
+  };
+  $("clearKeys").onclick = function(){
+    store(K_TAVILY, null); store(K_GEMINI, null);
+    $("tavilyKey").value = ""; $("geminiKey").value = "";
+    $("keyStatus").textContent = "키를 삭제했습니다.";
+  };
+
+  function showError(msg){ var e=$("error"); e.textContent=msg; e.hidden=!msg; }
+
+  async function httpError(res, who){
+    var detail = "";
+    try{ detail = (await res.text()).slice(0,200); }catch(e){}
+    if(res.status===401||res.status===403) return who+" 키가 올바르지 않거나 권한이 없습니다. (HTTP "+res.status+")";
+    if(res.status===429) return who+" 요청 한도를 초과했습니다. 잠시 후 다시 시도하세요.";
+    return who+" 호출 실패 (HTTP "+res.status+") "+detail;
+  }
+
+  // ---- 출처 종류 분류 (도메인 기반 추정) ----
+  var WEAK = ["블로그/커뮤니티"];
+  var RANK = {"정부":0,"통계":1,"공공기관":2,"언론사":3,"백과사전":4,"기타":5,"블로그/커뮤니티":6};
+  var GOV_DOMAINS = ["go.kr","korea.kr","kosis.kr","re.kr"];
+  var STAT_HOSTS = ["kosis.kr","kostat.go.kr","stat.go.kr","index.go.kr","ecos.bok.or.kr","statista.com","ourworldindata.org","data.worldbank.org"];
+  var PUBLIC_HOSTS = ["who.int","un.org","oecd.org","worldbank.org","imf.org","bok.or.kr","nps.or.kr","hira.or.kr","kosha.or.kr","lh.or.kr","kepco.co.kr","europa.eu"];
+  var WIKI_HOSTS = ["wikipedia.org","namu.wiki","britannica.com","terms.naver.com","encykorea.aks.ac.kr","doopedia.co.kr"];
+  var COMMUNITY_HOSTS = ["blog.naver.com","cafe.naver.com","kin.naver.com","cafe.daum.net","tistory.com","brunch.co.kr","velog.io","medium.com","blogspot.com","wordpress.com","dcinside.com","fmkorea.com","ruliweb.com","clien.net","ppomppu.co.kr","theqoo.net","instiz.net","reddit.com","quora.com","x.com","twitter.com","facebook.com","instagram.com"];
+  var PRESS_HOSTS = ["chosun.com","joongang.co.kr","donga.com","hani.co.kr","khan.co.kr","hankyung.com","mk.co.kr","yna.co.kr","newsis.com","news1.kr","kbs.co.kr","mbc.co.kr","imbc.com","sbs.co.kr","ytn.co.kr","jtbc.co.kr","segye.com","munhwa.com","seoul.co.kr","hankookilbo.com","kmib.co.kr","edaily.co.kr","mt.co.kr","etnews.com","ohmynews.com","pressian.com","v.daum.net","bbc.com","bbc.co.uk","reuters.com","apnews.com","nytimes.com","washingtonpost.com","cnn.com"];
+
+  function hostIn(host, list){
+    return list.some(function(d){ return host===d || host.slice(-(d.length+1))==="."+d; });
+  }
+  function classifySource(url){
+    var host = "";
+    try{ host = new URL(url).hostname.toLowerCase().replace(/^www\./,""); }catch(e){ return "기타"; }
+    if(hostIn(host, STAT_HOSTS) || /(^|[.\-])(stats|statistics|kosis)(\.|-|$)/.test(host)) return "통계";
+    if(/(^|\.)(gov|go)(\.[a-z]{2})?$/.test(host) || hostIn(host, ["korea.kr","mil.kr"])) return "정부";
+    if(/(^|\.)re\.kr$/.test(host) || hostIn(host, PUBLIC_HOSTS)) return "공공기관";
+    if(hostIn(host, WIKI_HOSTS)) return "백과사전";
+    if(hostIn(host, COMMUNITY_HOSTS) || /^(blog|cafe)\./.test(host)) return "블로그/커뮤니티";
+    if(hostIn(host, PRESS_HOSTS) || /news|ilbo|times|herald/.test(host)) return "언론사";
+    return "기타";
+  }
+
+  async function tavilySearch(extra, claim, key){
+    var body = Object.assign({query:claim, max_results:5, search_depth:"basic"}, extra);
+    var res = await fetch("https://api.tavily.com/search", {
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
+      body: JSON.stringify(body)
+    });
+    if(!res.ok) throw new Error(await httpError(res,"Tavily"));
+    var data = await res.json();
+    return (data.results||[]).filter(function(r){ return r && (r.content||"").trim(); });
+  }
+
+  // 일반 검색 + 정부·공공기관 도메인 한정 검색을 함께 하고, 출처 종류 우선순위로 정렬해 최대 5건을 고른다.
+  async function searchEvidence(claim, key){
+    var lists = await Promise.all([
+      tavilySearch({}, claim, key),
+      tavilySearch({include_domains:GOV_DOMAINS}, claim, key).catch(function(){ return []; })
+    ]);
+    var seen = {}, all = [];
+    lists[1].concat(lists[0]).forEach(function(r){
+      var u = r.url || "";
+      if(u && seen[u]) return;
+      if(u) seen[u] = true;
+      all.push({idx:all.length, title:r.title||"(제목 없음)", url:u, content:String(r.content).trim(), type:classifySource(u)});
+    });
+    all.sort(function(a,b){ return (RANK[a.type]-RANK[b.type]) || (a.idx-b.idx); });
+    return all.slice(0,5).map(function(e,i){ e.n = i+1; return e; });
+  }
+
+  async function callGemini(body, key){
+    var res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+GEMINI_MODEL+":generateContent", {
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-goog-api-key":key},
+      body: JSON.stringify(body)
+    });
+    if(!res.ok) throw new Error(await httpError(res,"Gemini"));
+    var data = await res.json();
+    var c = data && data.candidates && data.candidates[0];
+    return (c && c.content && c.content.parts && c.content.parts[0] && c.content.parts[0].text) || "";
+  }
+
+  // 주장에 기준·기간·지역이 빠져 있는지 보고, 모호하면 검증 가능한 문장 후보를 만든다.
+  async function clarify(claim, key){
+    var system =
+      "너는 팩트체크 전 단계에서 주장이 검증 가능한 문장인지 점검한다.\n"+
+      "1. 주장에 검증에 필요한 기준(무엇을 어떤 지표·출처로 재는지), 기간(언제 대비·언제 기준인지), 지역(어느 곳인지) 중 빠진 것이 있으면 ambiguous를 true로 하고 missing에 빠진 항목명을 적는다.\n"+
+      "2. 셋 다 충분히 특정되어 있으면 ambiguous는 false, candidates는 빈 배열로 한다.\n"+
+      "3. ambiguous가 true이면 candidates에 검증 가능하게 다듬은 문장을 2~3개 쓴다. 후보마다 해석이 달라야 한다.\n"+
+      "4. 주장에 없는 사실이나 수치를 지어내지 않는다. 사용자가 알려 주지 않아 정할 수 없는 값(예: 지역)은 [지역]처럼 대괄호 자리표시자로 남긴다. 기준과 기간은 흔한 해석을 후보로 제시해도 된다.\n"+
+      "5. 후보는 한 문장의 한국어로, 원래 주장의 의도를 바꾸지 않는다.";
+    var text = await callGemini({
+      systemInstruction:{parts:[{text:system}]},
+      contents:[{role:"user", parts:[{text:"[주장]\n"+claim}]}],
+      generationConfig:{
+        temperature:0.2,
+        responseMimeType:"application/json",
+        responseSchema:{
+          type:"OBJECT",
+          properties:{
+            ambiguous:{type:"BOOLEAN"},
+            missing:{type:"ARRAY", items:{type:"STRING"}},
+            candidates:{type:"ARRAY", items:{type:"STRING"}}
+          },
+          required:["ambiguous","missing","candidates"]
+        }
+      }
+    }, key);
+    try{
+      var o = JSON.parse(text);
+      var cands = (Array.isArray(o.candidates)?o.candidates:[]).map(function(s){ return String(s).trim(); })
+        .filter(function(s){ return s && s!==claim; }).slice(0,3);
+      // 후보가 2개 미만이면 선택지로 의미가 없으므로 원문 그대로 진행
+      if(o.ambiguous===true && cands.length>=2) return {ambiguous:true, missing:(o.missing||[]).map(String), candidates:cands};
+    }catch(e){}
+    return {ambiguous:false, missing:[], candidates:[]};
+  }
+
+  async function judge(claim, evidence, key){
+    var ev = evidence.map(function(e){ return "["+e.n+"] ("+e.type+") "+e.title+"\n"+e.content+"\n출처: "+e.url; }).join("\n\n");
+    var system =
+      "너는 지역 언론사 기자를 돕는 팩트체크 판정자다.\n"+
+      "규칙:\n"+
+      "1. 아래 제공된 [근거]에 적힌 내용만으로 판정한다. 너의 사전 지식, 추측, 기억은 쓰지 않는다.\n"+
+      "2. 근거에 없는 사실, 수치, 날짜, 인물, 출처를 절대 지어내지 않는다.\n"+
+      "3. 근거가 주장을 직접 다루지 않거나 서로 충돌해 결론을 내기 어렵거나 부족하면 반드시 '판단 유보'로 답한다.\n"+
+      "4. verdict는 다음 중 정확히 하나: "+VERDICTS.join(", ")+".\n"+
+      "5. reason에는 판정 근거를 한국어로 간결하게 쓰고, 근거를 말할 때마다 [번호]를 붙인다.\n"+
+      "6. 각 근거 번호 옆 괄호는 출처 종류(도메인으로 추정)다. 정부·통계·공공기관 근거가 블로그/커뮤니티 글과 충돌하면 앞쪽을 우선하고, 블로그/커뮤니티 글만으로는 판정하지 않는다.\n"+
+      "7. cited에는 실제로 판정에 사용한 근거 번호를 모두 넣는다. '판단 유보'가 아니면 최소 1개 이상이어야 한다.";
+    var body = {
+      systemInstruction:{parts:[{text:system}]},
+      contents:[{role:"user", parts:[{text:"[주장]\n"+claim+"\n\n[근거]\n"+ev}]}],
+      generationConfig:{
+        temperature:0,
+        responseMimeType:"application/json",
+        responseSchema:{
+          type:"OBJECT",
+          properties:{
+            verdict:{type:"STRING", enum:VERDICTS},
+            reason:{type:"STRING"},
+            cited:{type:"ARRAY", items:{type:"INTEGER"}}
+          },
+          required:["verdict","reason","cited"]
+        }
+      }
+    };
+    var text = await callGemini(body, key);
+    if(!text) return {verdict:"판단 유보", reason:"AI가 응답을 만들지 못했습니다(안전 필터 또는 빈 응답). 판단을 유보합니다.", cited:[]};
+    try{ return JSON.parse(text); }
+    catch(e){ return {verdict:"판단 유보", reason:"AI 응답을 해석하지 못했습니다. 판단을 유보합니다.", cited:[]}; }
+  }
+
+  // 코드 차원의 규칙 강제: 프롬프트가 어겨져도 여기서 막는다.
+  function enforce(out, evidence){
+    var valid = evidence.map(function(e){ return e.n; });
+    var cited = Array.isArray(out.cited) ? out.cited.filter(function(n){ return valid.indexOf(n)!==-1; }) : [];
+    var verdict = out.verdict, reason = String(out.reason||"");
+    if(VERDICTS.indexOf(verdict)===-1){
+      return {verdict:"판단 유보", reason:"AI가 허용되지 않은 판정값을 냈습니다. 판단을 유보합니다.", cited:[]};
+    }
+    if(verdict!=="판단 유보" && cited.length===0){
+      return {verdict:"판단 유보", reason:"판정에 인용된 근거가 확인되지 않아 판단을 유보합니다. (AI 원래 판정: "+verdict+")", cited:[]};
+    }
+    // 인용한 근거가 전부 블로그/커뮤니티면 유보
+    if(verdict!=="판단 유보" && cited.every(function(n){
+      var ev = evidence.filter(function(e){ return e.n===n; })[0];
+      return ev && WEAK.indexOf(ev.type)!==-1;
+    })){
+      return {verdict:"판단 유보", reason:"판정에 인용된 근거가 모두 블로그/커뮤니티 글이라 판단을 유보합니다. (AI 원래 판정: "+verdict+")", cited:cited};
+    }
+    // 이유에 존재하지 않는 근거 번호가 있으면 유보
+    var refs = reason.match(/\[(\d+)\]/g) || [];
+    for(var i=0;i<refs.length;i++){
+      if(valid.indexOf(parseInt(refs[i].slice(1,-1),10))===-1){
+        return {verdict:"판단 유보", reason:"판정 이유가 존재하지 않는 근거를 언급해 판단을 유보합니다. (AI 원래 판정: "+verdict+")", cited:cited};
+      }
+    }
+    return {verdict:verdict, reason:reason, cited:cited};
+  }
+
+  function oneLine(reason){
+    var s = String(reason||"").replace(/\s+/g," ").trim();
+    var m = s.match(/^.*?[.!?。](?=\s|$)/);
+    var line = m ? m[0] : s;
+    return line.length>110 ? line.slice(0,110)+"…" : line;
+  }
+  function hostOf(u){ try{ return new URL(u).hostname.replace(/^www\./,""); }catch(e){ return u || ""; } }
+
+  function makeTag(type){
+    var tag = document.createElement("span");
+    tag.className = "tag" + (WEAK.indexOf(type)!==-1 ? " weak" : "");
+    tag.textContent = type;
+    return tag;
+  }
+
+  function render(result, evidence){
+    $("result").hidden = false;
+    var b = $("badge");
+    b.textContent = result.verdict;
+    b.className = "badge " + CLASSES[result.verdict];
+    $("summary").textContent = oneLine(result.reason);
+    $("reason").textContent = result.reason;
+
+    // 출처 카드
+    var src = $("sources");
+    src.textContent = "";
+    if(!evidence.length){
+      var np = document.createElement("p");
+      np.className = "note";
+      np.textContent = "검색된 출처가 없습니다.";
+      src.appendChild(np);
+    }
+    evidence.forEach(function(e){
+      var ok = /^https?:\/\//i.test(e.url);
+      var card = document.createElement(ok ? "a" : "div");
+      card.className = "src" + (result.cited.indexOf(e.n)!==-1 ? " cited" : "");
+      if(ok){ card.href = e.url; card.target = "_blank"; card.rel = "noopener noreferrer"; }
+      var t = document.createElement("div"); t.className = "src-title"; t.textContent = e.title;
+      var meta = document.createElement("div"); meta.className = "src-meta";
+      var n = document.createElement("span"); n.className = "n"; n.textContent = e.n;
+      var h = document.createElement("span"); h.className = "host"; h.textContent = hostOf(e.url);
+      meta.appendChild(n); meta.appendChild(h);
+      card.appendChild(t);
+      card.appendChild(makeTag(e.type));
+      card.appendChild(meta);
+      src.appendChild(card);
+    });
+
+    // 근거 본문
+    var box = $("evidence");
+    box.textContent = "";
+    if(!evidence.length){
+      var p = document.createElement("p");
+      p.className = "note";
+      p.textContent = "검색된 근거가 없습니다.";
+      box.appendChild(p);
+      return;
+    }
+    evidence.forEach(function(e){
+      var d = document.createElement("div");
+      d.className = "ev" + (result.cited.indexOf(e.n)!==-1 ? " cited" : "");
+      var t = document.createElement("div"); t.className="t";
+      t.appendChild(makeTag(e.type));
+      t.appendChild(document.createTextNode(" ["+e.n+"] "+e.title));
+      d.appendChild(t);
+      if(/^https?:\/\//i.test(e.url)){
+        var a = document.createElement("a"); a.href=e.url; a.target="_blank"; a.rel="noopener noreferrer"; a.textContent=e.url;
+        d.appendChild(a);
+      }
+      var c = document.createElement("p"); c.textContent = e.content.length>400 ? e.content.slice(0,400)+"…" : e.content;
+      d.appendChild(c);
+      box.appendChild(d);
+    });
+  }
+
+  // ---- 화면 전환·기록 (검색·판정 로직과 무관한 화면 코드) ----
+  var K_HIST = "factcheck.history";
+  function readHist(){ try{ var a = JSON.parse(load(K_HIST) || "[]"); return Array.isArray(a) ? a : []; }catch(e){ return []; } }
+  function saveHist(item){
+    var a = readHist(); a.unshift(item); a = a.slice(0,30);
+    store(K_HIST, JSON.stringify(a));
+    renderRecent();
+  }
+  function showView(name){
+    $("home").hidden = name!=="home";
+    $("thread").hidden = name!=="thread";
+    $("historyView").hidden = name!=="history";
+    $("menuOne").classList.toggle("active", name!=="history");
+    $("menuHistory").classList.toggle("active", name==="history");
+    $("sidebar").classList.remove("open");
+  }
+  function openHist(item){
+    showError(""); hideCands();
+    $("runStatus").textContent = ""; $("runStatus").className = "status";
+    $("qTitle").textContent = item.claim;
+    showView("thread");
+    render(item.result, item.evidence || []);
+  }
+  function renderRecent(){
+    var box = $("recent"), a = readHist().slice(0,8);
+    box.textContent = "";
+    if(!a.length){
+      var e = document.createElement("div"); e.className = "empty"; e.textContent = "기록 없음"; box.appendChild(e); return;
+    }
+    a.forEach(function(item){
+      var b = document.createElement("button");
+      b.type = "button"; b.textContent = item.claim; b.title = item.claim;
+      b.onclick = function(){ openHist(item); };
+      box.appendChild(b);
+    });
+  }
+  function renderHistoryList(){
+    var box = $("historyList"), a = readHist();
+    box.textContent = "";
+    if(!a.length){
+      var p = document.createElement("p"); p.className = "note"; p.textContent = "아직 검증 기록이 없습니다."; box.appendChild(p); return;
+    }
+    a.forEach(function(item){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "hist-item";
+      var mb = document.createElement("span"); mb.className = "mini-badge " + (CLASSES[item.result.verdict] || "v-hold"); mb.textContent = item.result.verdict;
+      var c = document.createElement("span"); c.className = "claim-t"; c.textContent = item.claim;
+      var w = document.createElement("span"); w.className = "when";
+      var d = new Date(item.ts); w.textContent = isNaN(d) ? "" : (d.getMonth()+1)+"/"+d.getDate()+" "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
+      b.appendChild(mb); b.appendChild(c); b.appendChild(w);
+      b.onclick = function(){ openHist(item); };
+      box.appendChild(b);
+    });
+  }
+
+  function hideCands(){ $("cands").hidden = true; $("cands").textContent = ""; }
+
+  function showCands(info, original){
+    var box = $("cands");
+    box.textContent = "";
+    var p = document.createElement("p");
+    p.textContent = "주장에 " + (info.missing.length ? info.missing.join(", ") : "기준·기간·지역") +
+      " 정보가 부족해 바로 판정하지 않았습니다. 검증할 문장을 골라 주세요.";
+    box.appendChild(p);
+    info.candidates.forEach(function(c){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = c;
+      b.onclick = function(){
+        if(/\[[^\]]+\]/.test(c)){
+          // 자리표시자가 남은 후보는 채워 넣어야 검증할 수 있으므로 입력칸으로 옮긴다.
+          $("claim").value = c;
+          hideCands();
+          showView("home");
+          autoGrow();
+          var hint = document.querySelector(".composer-hint");
+          hint.textContent = "대괄호 [ ] 부분을 실제 값으로 바꾼 뒤 Enter를 누르세요.";
+          $("claim").focus();
+        }else{
+          $("claim").value = c;
+          start(c, true);
+        }
+      };
+      box.appendChild(b);
+    });
+    var plain = document.createElement("button");
+    plain.type = "button"; plain.className = "plain";
+    plain.textContent = "원문 그대로 검증: " + original;
+    plain.onclick = function(){ start(original, true); };
+    box.appendChild(plain);
+    box.hidden = false;
+  }
+
+  $("run").onclick = function(){ start($("claim").value.trim(), false); };
+
+  async function start(claim, skipClarify){
+    showError("");
+    hideCands();
+    var tk = $("tavilyKey").value.trim(), gk = $("geminiKey").value.trim();
+    if(!tk || !gk){ openSettings("검증하려면 두 API 키를 모두 입력하세요."); return; }
+    if(!claim){ $("claim").focus(); return; }
+    var btn = $("run"); btn.disabled = true;
+    $("result").hidden = true;
+    $("qTitle").textContent = claim;
+    $("runStatus").className = "status busy";
+    showView("thread");
+    try{
+      if(!skipClarify){
+        $("runStatus").textContent = "주장이 검증 가능한지 확인 중…";
+        var info = await clarify(claim, gk);
+        if(info.ambiguous){
+          $("runStatus").textContent = "";
+          showCands(info, claim);
+          return;
+        }
+      }
+      $("runStatus").textContent = "근거 검색 중…";
+      var evidence = await searchEvidence(claim, tk);
+      var result;
+      if(evidence.length===0){
+        result = {verdict:"판단 유보", reason:"검색된 근거가 0건이어서 판단을 유보합니다.", cited:[]};
+      }else if(evidence.every(function(e){ return WEAK.indexOf(e.type)!==-1; })){
+        result = {verdict:"판단 유보", reason:"검색된 근거가 모두 블로그/커뮤니티 글이라 판단을 유보합니다. 정부·공공기관·통계·언론 등 다른 출처가 확인될 때까지 판정하지 않습니다.", cited:[]};
+      }else{
+        $("runStatus").textContent = "근거를 바탕으로 판정 중…";
+        result = enforce(await judge(claim, evidence, gk), evidence);
+      }
+      render(result, evidence);
+      saveHist({claim:claim, ts:Date.now(), result:result, evidence:evidence.map(function(e){
+        return {n:e.n, title:e.title, url:e.url, type:e.type, content:e.content.slice(0,400)};
+      })});
+      $("runStatus").textContent = "";
+    }catch(e){
+      $("runStatus").textContent = "";
+      var msg = e && e.message ? e.message : String(e);
+      if(e instanceof TypeError) msg = "네트워크 오류 또는 브라우저 차단(CORS)으로 호출하지 못했습니다. 인터넷 연결과 키를 확인하세요.\n("+msg+")";
+      showError(msg);
+    }finally{
+      btn.disabled = false;
+      $("runStatus").className = "status";
+    }
+  }
+
+  // ---- 설정 창·사이드바·입력창 동작 ----
+  function openSettings(msg){
+    $("settings").hidden = false;
+    $("sidebar").classList.remove("open");
+    if(msg) $("keyStatus").textContent = msg;
+    $("tavilyKey").focus();
+  }
+  function closeSettings(){ $("settings").hidden = true; }
+  $("openSettings").onclick = function(){ openSettings(); };
+  $("closeSettings").onclick = closeSettings;
+  $("settings").addEventListener("mousedown", function(e){ if(e.target===this) closeSettings(); });
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape" && !$("settings").hidden) closeSettings(); });
+  $("saveKeys").addEventListener("click", function(){
+    if($("tavilyKey").value.trim() && $("geminiKey").value.trim() && load(K_TAVILY) && load(K_GEMINI) && $("keyStatus").textContent.indexOf("사라집니다")===-1) setTimeout(closeSettings, 700);
+  });
+
+  $("menuBtn").onclick = function(){ $("sidebar").classList.toggle("open"); };
+  function newCheck(){
+    showError(""); hideCands();
+    $("claim").value = ""; autoGrow();
+    showView("home");
+    $("claim").focus();
+  }
+  $("newCheck").onclick = newCheck;
+  $("menuOne").onclick = function(){ showView("home"); $("claim").focus(); };
+  $("menuHistory").onclick = function(){ renderHistoryList(); showView("history"); };
+  $("clearHistory").onclick = function(){
+    if(confirm("검증 기록을 모두 지울까요?")){ store(K_HIST, null); renderRecent(); renderHistoryList(); }
+  };
+  Array.prototype.forEach.call(document.querySelectorAll(".example"), function(b){
+    b.onclick = function(){ $("claim").value = b.getAttribute("data-claim"); autoGrow(); $("claim").focus(); };
+  });
+  function autoGrow(){ var t = $("claim"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 200) + "px"; }
+  $("claim").addEventListener("input", function(){
+    autoGrow();
+    document.querySelector(".composer-hint").textContent = "Enter로 검증 · Shift+Enter로 줄바꿈";
+  });
+  $("claim").addEventListener("keydown", function(e){
+    if(e.key==="Enter" && !e.shiftKey && !e.isComposing){ e.preventDefault(); if(!$("run").disabled) $("run").click(); }
+  });
+
+  loadKeys();
+  renderRecent();
+  if(!$("tavilyKey").value || !$("geminiKey").value) openSettings("처음 사용하려면 두 키를 입력하세요.");
+})();
+</script>
+</body>
+</html>
